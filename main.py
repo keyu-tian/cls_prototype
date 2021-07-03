@@ -176,7 +176,7 @@ def train_model(exp_root, train_cfg, dist, loggers, get_new_tr_loader, te_loader
             loss.backward()
             back_t = time.time()
             
-            orig_norm = torch.nn.utils.clip_grad_norm_(all_params, float(train_cfg.grad_clip)).item()
+            orig_norm = float(torch.nn.utils.clip_grad_norm_(all_params, float(train_cfg.grad_clip)))
             clip_t = time.time()
             
             sche_lr = adjust_learning_rate(optimizer, cur_iter, max_iter, train_cfg.lr)
