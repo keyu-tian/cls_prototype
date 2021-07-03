@@ -8,7 +8,7 @@ import subprocess
 import time
 from collections import Counter
 from copy import deepcopy
-from typing import Tuple
+from typing import Tuple, Iterable
 
 import colorama
 from retrying import retry
@@ -24,6 +24,10 @@ class STLogger:
     
     @retry(stop_max_attempt_number=5, wait_fixed=500)
     def log(self, **kw):
+        for k, v in kw.items():
+            if isinstance(v, Iterable):
+                kw[k] = str(v)
+        
         changed = not all(k in self.st_kw and self.st_kw[k] == v for k, v in kw.items())
         if changed:
             self.st_kw.update(kw)

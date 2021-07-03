@@ -19,7 +19,8 @@ from ema import EMA
 from log import create_loggers
 from meta import NUM_CLASSES
 from models import build_model
-from utils import filter_params, TopKHeap, LabelSmoothCELoss, adjust_learning_rate, AverageMeter, master_echo
+from utils import filter_params, TopKHeap, adjust_learning_rate, AverageMeter, master_echo
+from loss import LabelSmoothCELoss, mixup_data, mixup_criterion
 
 
 def main():
@@ -141,6 +142,7 @@ def train_model(exp_root, train_cfg, dist, loggers, get_new_tr_loader, te_loader
     topk_accs, topk_accs_ema = TopKHeap(maxsize=30), TopKHeap(maxsize=30)
     epoch_speed = AverageMeter(4)
     
+    mix = train_cfg.mix if 'mix' in train_cfg and 0 < train_cfg.mix < 1 else None
     loop_start_t = time.time()
     milestone_ep: list = np.linspace(0, max_ep, 10+1, dtype=int)[1:-1].tolist()
     for ep in range(max_ep):
@@ -169,8 +171,13 @@ def train_model(exp_root, train_cfg, dist, loggers, get_new_tr_loader, te_loader
             inp, tar = inp.cuda(non_blocking=True), tar.cuda(non_blocking=True)
             cuda_t = time.time()
             
-            logits = model(inp)
-            loss = loss_fn(logits, tar)
+            if mix is not None:
+                inp, tar_a, tar_b, lam = mixup_data(inp, tar, train_cfg.mix)
+                logits = model(inp)
+                loss = mixup_criterion(loss_fn, logits, tar_a, tar_b, lam)
+            else:
+                logits = model(inp)
+                loss = loss_fn(logits, tar)
             forw_t = time.time()
             
             loss.backward()
