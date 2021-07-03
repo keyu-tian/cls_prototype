@@ -3,7 +3,7 @@ data:
     wh: [0.6, 0.4]
     scale_ratio: [0.6, 0.4]
     sharp: [0.6, 1.0]
-    trans: [0.15, 0.35]
+    trans: [0.2, 0.35]
     rot: [15, 25]
     jitter: [0.25, 0.45]
     root: ~                     # None: [will be expand as ~/datasets/scene15]
