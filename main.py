@@ -124,7 +124,7 @@ def train_model(exp_root, train_cfg, dist, loggers, tr_loader, te_loader, ema: E
     
     loop_start_t = time.time()
     for ep in range(max_ep):
-        te_freq = max(1, round(tr_iters // 6)) if ep >= max_ep * 0.5 else tr_iters * 4
+        te_freq = max(1, round(tr_iters // 3)) if ep >= max_ep * 0.5 else tr_iters * 4
         ep_str = f'%{len(str(max_ep))}d'
         ep_str %= ep + 1
         ep_str = f'ep[{ep_str}/{max_ep}]'
@@ -187,6 +187,8 @@ def train_model(exp_root, train_cfg, dist, loggers, tr_loader, te_loader, ema: E
                 ema.recover(model)
                 topk_accs_ema.push_q(test_acc_ema)
                 
+                test_t = time.time()
+                
                 if best_acc > saved_acc:
                     saved_acc = best_acc;
                     torch.save(model.state_dict(), saved_path)
@@ -195,8 +197,8 @@ def train_model(exp_root, train_cfg, dist, loggers, tr_loader, te_loader, ema: E
                 
                 lg.info(
                     f'=> {ep_str}, {it_str}:    lr={sche_lr:.3g}({actual_lr:.3g}), nm={orig_norm:.1f}\n'
-                    f'  [train] L={train_loss:.3g}, acc={train_acc:5.2f}, da={data_t - last_t:.3f} cu={cuda_t - data_t:.3f} fp={forw_t - cuda_t:.3f} bp={back_t - forw_t:.3f} cl={clip_t - back_t:.3f} op={optm_t - clip_t:.3f}\n'
-                    f'  [test ] L={test_loss:.3g}({test_loss_ema:.3g}), acc={test_acc:5.2f}({test_acc_ema:5.2f})      remain [{str(remain_time)}] ({finish_time})       >>> [best]={best_acc:5.2f}({best_acc_ema:5.2f})'
+                    f'  [train] L={train_loss:.3f}, acc={train_acc:5.2f}, da={data_t - last_t:.3f} cu={cuda_t - data_t:.3f} fp={forw_t - cuda_t:.3f} bp={back_t - forw_t:.3f} cl={clip_t - back_t:.3f} op={optm_t - clip_t:.3f} te={test_t-optm_t:.3f}\n'
+                    f'  [test ] L={test_loss:.3f}({test_loss_ema:.3f}), acc={test_acc:5.2f}({test_acc_ema:5.2f})      remain [{str(remain_time)}] ({finish_time})       >>> [best]={best_acc:5.2f}({best_acc_ema:5.2f})'
                 )
                 tb_lg.add_scalar('test/acc', test_acc, cur_iter)
                 tb_lg.add_scalars('test/acc', {'ema': test_acc_ema}, cur_iter)
