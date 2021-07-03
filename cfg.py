@@ -26,10 +26,6 @@ def parse_cfg(cfg_path, world_size, rank, only_model=False):
             if d is not None:
                 dist_d, dist_k, dist_v = d, k, v
                 break
-            # for k, v in comp.items():
-            #     if isinstance(v, list):
-            #         assert len(v) == world_size
-            #         dist_d, dist_k, dist_v = comp, k, v
     
     if dist_d is not None:
         assert len(dist_v) == world_size
