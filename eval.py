@@ -27,3 +27,7 @@ def main():
         te_loader = DataLoader(te_set, 64, shuffle=False, num_workers=4, pin_memory=True, drop_last=False)
         test_acc, test_loss = eval_model(te_loader, model)
         print(f'[val_crop={val_crop}] test_acc={test_acc:5.2f}, test_loss={test_loss:.2f}')
+
+
+if __name__ == '__main__':
+    main()
