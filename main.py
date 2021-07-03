@@ -26,7 +26,7 @@ def main():
     torch.backends.cudnn.benchmark = True
     torch.backends.cudnn.deterministic = False
     
-    parser = argparse.ArgumentParser(description='IPCV homework set 3 -- Scene cls task')
+    parser = argparse.ArgumentParser(description='IPCV homework set 3 -- scene cls task')
     parser.add_argument('--main_py_rel_path', type=str, required=True)
     parser.add_argument('--exp_dirname', type=str, required=True)
     parser.add_argument('--cfg', type=str, required=True)
@@ -110,8 +110,7 @@ def train_model(exp_root, train_cfg, dist, loggers, tr_loader, te_loader, ema: E
     
     exp_name = os.path.split(exp_root)[-1]
     saved_path = os.path.join(exp_root, 'best_ckpt.pth')
-    params = filter_params(model) if train_cfg.nowd else model.parameters()
-    params = list(filter(lambda p: p.requires_grad, params))
+    params = filter_params(model) if train_cfg.nowd else list(filter(lambda p: p.requires_grad, model.parameters()))
     optimizer = torch.optim.SGD(params, lr=float(train_cfg.lr), weight_decay=float(train_cfg.wd), momentum=0.9, nesterov=True)
     loss_fn = LabelSmoothCELoss(float(train_cfg.ls_ratio), NUM_CLASSES) if train_cfg.ls_ratio is not None else CrossEntropyLoss()
     loss_fn = loss_fn.cuda()
@@ -225,14 +224,14 @@ def train_model(exp_root, train_cfg, dist, loggers, tr_loader, te_loader, ema: E
     best_accs = dist.dist_fmt_vals(best_acc, None)
     best_accs_ema = dist.dist_fmt_vals(best_acc_ema, None)
     if dist.is_master():
-        [tb_lg.add_scalar('z_final_mean/topk_accs', topk_accs.mean().item(), e) for e in [-max_ep, max_ep]]
-        [tb_lg.add_scalar('z_final_mean/topk_accs_ema', topk_accs_ema.mean().item(), e) for e in [-max_ep, max_ep]]
-        [tb_lg.add_scalar('z_final_mean/best_accs', best_accs.mean().item(), e) for e in [-max_ep, max_ep]]
-        [tb_lg.add_scalar('z_final_mean/best_accs_ema', best_accs_ema.mean().item(), e) for e in [-max_ep, max_ep]]
-        [tb_lg.add_scalar('z_final_best/topk_accs', topk_accs.max().item(), e) for e in [-max_ep, max_ep]]
+        [tb_lg.add_scalar('z_final_best/topk_accs',     topk_accs.max().item(), e)     for e in [-max_ep, max_ep]]
         [tb_lg.add_scalar('z_final_best/topk_accs_ema', topk_accs_ema.max().item(), e) for e in [-max_ep, max_ep]]
-        [tb_lg.add_scalar('z_final_best/best_accs', best_accs.max().item(), e) for e in [-max_ep, max_ep]]
+        [tb_lg.add_scalar('z_final_best/best_accs',     best_accs.max().item(), e)     for e in [-max_ep, max_ep]]
         [tb_lg.add_scalar('z_final_best/best_accs_ema', best_accs_ema.max().item(), e) for e in [-max_ep, max_ep]]
+        [tb_lg.add_scalar('z_final_mean/topk_accs',     topk_accs.mean().item(), e)     for e in [-max_ep, max_ep]]
+        [tb_lg.add_scalar('z_final_mean/topk_accs_ema', topk_accs_ema.mean().item(), e) for e in [-max_ep, max_ep]]
+        [tb_lg.add_scalar('z_final_mean/best_accs',     best_accs.mean().item(), e)     for e in [-max_ep, max_ep]]
+        [tb_lg.add_scalar('z_final_mean/best_accs_ema', best_accs_ema.mean().item(), e) for e in [-max_ep, max_ep]]
 
     if train_cfg.descs is not None:
         perform_dict_str = pformat({
