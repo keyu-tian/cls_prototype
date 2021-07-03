@@ -153,7 +153,7 @@ def train_model(exp_root, train_cfg, dist, loggers, tr_loader, te_loader, ema: E
             loss.backward()
             back_t = time.time()
             
-            orig_norm = torch.nn.utils.clip_grad_norm_(all_params, float(train_cfg.grad_clip))
+            orig_norm = torch.nn.utils.clip_grad_norm_(all_params, float(train_cfg.grad_clip)).item()
             clip_t = time.time()
             
             sche_lr = adjust_learning_rate(optimizer, cur_iter, max_iter, train_cfg.lr)
@@ -209,7 +209,7 @@ def train_model(exp_root, train_cfg, dist, loggers, tr_loader, te_loader, ema: E
                 
                 st_lg.log(
                     pr=(cur_iter + 1) / max_iter,
-                    clr=f'{sche_lr:.2g}', nm=orig_norm,
+                    clr=sche_lr, nm=orig_norm,
                     tr_L=train_loss, te_L=test_loss, em_L=test_loss_ema,
                     tr_A=train_acc, te_A=test_acc, em_A=test_acc_ema,
                     be=best_acc, be_e=best_acc_ema,
