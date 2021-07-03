@@ -37,7 +37,7 @@ class STLogger:
 
 class STListener:
     ST_TAGS = [
-        'vc', 'nowd', 'mlp',
+        'vc', 'nowd',
     ]
     
     def __init__(self, exp_dir_abs_path, api_token='543ff680370a2257856e1facd0471fed1f238c80', sheet_name='main'):

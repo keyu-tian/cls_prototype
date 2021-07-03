@@ -374,7 +374,6 @@ class EfficientNet(nn.Module):
                  bn_mom=0.9,
                  af_name='swish',
                  dropout_rate=None,
-                 mlp=False,
                  ):
         super(EfficientNet, self).__init__()
         global BN, AF
@@ -387,9 +386,9 @@ class EfficientNet(nn.Module):
         self.use_fc_bn = use_fc_bn
         self.fc_bn_init_scale = fc_bn_init_scale
         
-        self._build(dropout_rate, num_classes, mlp)
+        self._build(dropout_rate, num_classes)
     
-    def _build(self, new_dropout_rate, num_classes, mlp):
+    def _build(self, new_dropout_rate, num_classes):
         self.af = AF
         blocks = []
         for block_args in self._blocks_args:
@@ -423,16 +422,7 @@ class EfficientNet(nn.Module):
         )
         
         self.avgpool = torch.nn.AdaptiveAvgPool2d(output_size=1)
-        self.mlp = mlp
-        if mlp:
-            mid_dim = num_classes * 64
-            self.fc1 = torch.nn.Linear(c_final, mid_dim, bias=False)
-            self.bn_between_fc = BN(mid_dim)
-            self.drop_between_fc = nn.Dropout(p=0.5, inplace=True)
-            self.fc2 = torch.nn.Linear(mid_dim, num_classes)
-        else:
-            self.fc = torch.nn.Linear(c_final, num_classes)
-            
+        self.fc = torch.nn.Linear(c_final, num_classes)
         # self.fc = torch.nn.Linear(c_final, self._global_params.num_classes)
         
         if self._global_params.dropout_rate > 0:
@@ -462,8 +452,7 @@ class EfficientNet(nn.Module):
             elif isinstance(m, nn.Linear):
                 n = m.weight.size(1)
                 m.weight.data.normal_(0, 1.0/float(n))
-                if m.bias is not None:
-                    m.bias.data.zero_()
+                m.bias.data.zero_()
     
     def forward(self, x):
         x = self.stem(x)
@@ -480,17 +469,7 @@ class EfficientNet(nn.Module):
         x = x.view(x.size(0), -1)
         if self.dropout is not None:
             x = self.dropout(x)
-        
-        if self.mlp:
-            x = self.fc1(x)
-            if x.size(0) > 1:
-                x = self.bn_between_fc(x.view(x.size(0), -1, 1, 1))
-                x = x.view(x.size(0), -1)
-            x = self.af(x, inplace=True)
-            x = self.drop_between_fc(x)
-            x = self.fc2(x)
-        else:
-            x = self.fc(x)
+        x = self.fc(x)
         
         if self.use_fc_bn and x.size(0) > 1:
             x = self.fc_bn(x.view(x.size(0), -1, 1, 1))
@@ -545,12 +524,12 @@ def efficientnet_b7(**kwargs):
 
 
 if __name__ == '__main__':
-    net = efficientnet_b3_k(bn_mom=0.9, num_classes=15, mlp=False)
+    net = efficientnet_b3_k(bn_mom=0.9, num_classes=15)
     import torchsummary
     torchsummary.summary(net, (3, 224, 224))
     print(net.__class__.__name__)
 
-    # for name, m in net.named_modules():
-    #     clz = m.__class__.__name__
-    #     print(clz)
+    for name, m in net.named_modules():
+        clz = m.__class__.__name__
+        print(clz)
     
