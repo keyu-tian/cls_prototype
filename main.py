@@ -4,6 +4,7 @@ import time
 from datetime import datetime
 from pprint import pformat
 
+import numpy as np
 import colorama
 import torch
 import torch.nn.functional as F
