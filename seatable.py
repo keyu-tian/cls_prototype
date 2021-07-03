@@ -18,8 +18,7 @@ ST_LOG_FILENAME = 'seatable_log.json'
 
 
 class STLogger:
-    def __init__(self, exp_dir_abs_path):
-        exp_name = os.path.split(exp_dir_abs_path)[-1]
+    def __init__(self, exp_dir_abs_path, exp_name):
         self.log_path = os.path.join(exp_dir_abs_path, ST_LOG_FILENAME)
         self.st_kw = dict(abs_path=exp_dir_abs_path, exp=exp_name)
     

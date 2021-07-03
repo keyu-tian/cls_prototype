@@ -61,7 +61,7 @@ def main_process(exp_root, cfg, dist, loggers):
     data_cfg, model_cfg, train_cfg = cfg.data, cfg.model, cfg.train
     
     loggers[1].log(
-        net=model_cfg.name, bm=model_cfg.kwargs.bn_mom, dr=model_cfg.kwargs.dropout_rate,
+        net=model_cfg.name, bmo=model_cfg.kwargs.bn_mom, dr=model_cfg.kwargs.dropout_rate,
         bs=data_cfg.batch_size, rot=data_cfg.rot, r=data_cfg.scale_ratio, vc=data_cfg.val_crop,
         ep=train_cfg.epochs, lr=train_cfg.lr, wd=train_cfg.wd, nowd=train_cfg.nowd, ls=train_cfg.ls_ratio, clp=train_cfg.grad_clip,
         pr=0, rem=0, beg_t=datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
@@ -110,6 +110,7 @@ def train_model(exp_root, train_cfg, dist, loggers, tr_loader, te_loader, ema: E
     
     exp_name = os.path.split(exp_root)[-1]
     saved_path = os.path.join(exp_root, 'best_ckpt.pth')
+    all_params = list(model.parameters())
     params = filter_params(model) if train_cfg.nowd else list(filter(lambda p: p.requires_grad, model.parameters()))
     optimizer = torch.optim.SGD(params, lr=float(train_cfg.lr), weight_decay=float(train_cfg.wd), momentum=0.9, nesterov=True)
     loss_fn = LabelSmoothCELoss(float(train_cfg.ls_ratio), NUM_CLASSES) if train_cfg.ls_ratio is not None else CrossEntropyLoss()
@@ -149,7 +150,7 @@ def train_model(exp_root, train_cfg, dist, loggers, tr_loader, te_loader, ema: E
             loss.backward()
             back_t = time.time()
             
-            orig_norm = torch.nn.utils.clip_grad_norm_(params, float(train_cfg.grad_clip))
+            orig_norm = torch.nn.utils.clip_grad_norm_(all_params, float(train_cfg.grad_clip))
             clip_t = time.time()
             
             sche_lr = adjust_learning_rate(optimizer, cur_iter, max_iter, train_cfg.lr)
