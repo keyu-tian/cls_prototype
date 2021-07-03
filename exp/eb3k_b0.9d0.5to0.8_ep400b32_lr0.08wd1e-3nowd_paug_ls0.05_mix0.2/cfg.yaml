@@ -20,7 +20,7 @@ model:
 train:
     epochs: 400
     lr: 0.08
-    wd: 5e-4
+    wd: 1e-3
     nowd: True
     ls_ratio: 0.05
     mix: 0.2
