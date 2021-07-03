@@ -40,10 +40,10 @@ class EMA(object):
         state_dict = model.state_dict()
         if self.use_double:
             for k, v in state_dict.items():
-                self.ema_state_dict[k].mul_(decay).add_(1-decay, v.double())
+                self.ema_state_dict[k].mul_(decay).add_(alpha=1-decay, other=v.double())
         else:
             for k, v in state_dict.items():
-                self.ema_state_dict[k].mul_(decay).add_(1-decay, v.float())
+                self.ema_state_dict[k].mul_(decay).add_(alpha=1-decay, other=v.float())
 
     def load_ema(self, model):
         for k, v in model.state_dict().items():

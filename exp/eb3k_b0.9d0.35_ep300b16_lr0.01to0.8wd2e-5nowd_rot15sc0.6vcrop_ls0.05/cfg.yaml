@@ -14,7 +14,7 @@ model:
     ema_mom: 0.999
 
 train:
-    epochs: 3
+    epochs: 300
     lr: [0.01, 0.02, 0.04, 0.08,    0.1, 0.2, 0.4, 0.8]
     wd: 2e-5
     nowd: True

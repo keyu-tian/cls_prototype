@@ -108,7 +108,7 @@ def train_model(exp_root, train_cfg, dist, loggers, tr_loader, te_loader, ema: E
     except ValueError:
         pass
     
-    exp_name = os.path.split(exp_root)[-1]
+    exp_name = exp_root.split('exp/')[-1]
     saved_path = os.path.join(exp_root, 'best_ckpt.pth')
     all_params = list(model.parameters())
     params = filter_params(model) if train_cfg.nowd else list(filter(lambda p: p.requires_grad, model.parameters()))
@@ -125,7 +125,7 @@ def train_model(exp_root, train_cfg, dist, loggers, tr_loader, te_loader, ema: E
 
     loop_start_t = time.time()
     for ep in range(max_ep):
-        te_freq = max(1, round(tr_iters // 6)) if ep > max_ep * 0.5 else tr_iters * 4
+        te_freq = max(1, round(tr_iters // 6)) if ep >= max_ep * 0.5 else tr_iters * 4
         ep_str = f'%{len(str(max_ep))}d'
         ep_str %= ep + 1
         ep_str = f'ep[{ep_str}/{max_ep}]'
@@ -189,8 +189,8 @@ def train_model(exp_root, train_cfg, dist, loggers, tr_loader, te_loader, ema: E
                 remain_time, finish_time = epoch_speed.time_preds(max_ep - (ep + 1))
 
                 lg.info(
-                    f'=> {ep_str}, {it_str}:    lr={sche_lr:.3g}({actual_lr:.3g}), nm={orig_norm:.1g}    [exp]: {exp_name}\n'
-                    f'  [train] L={train_loss:.3g}, acc={train_acc:5.2f}, da={data_t-last_t:.3f} cu={cuda_t-data_t:.3f} fp={forw_t-cuda_t:.3f} bp={back_t-forw_t:.3f} cl={clip_t-back_t} op={optm_t-clip_t}\n'
+                    f'=> {ep_str}, {it_str}:    lr={sche_lr:.3g}({actual_lr:.3g}), nm={orig_norm:.1f}    [exp]: {exp_name}\n'
+                    f'  [train] L={train_loss:.3g}, acc={train_acc:5.2f}, da={data_t-last_t:.3f} cu={cuda_t-data_t:.3f} fp={forw_t-cuda_t:.3f} bp={back_t-forw_t:.3f} cl={clip_t-back_t:.3f} op={optm_t-clip_t:.3f}\n'
                     f'  [test ] L={test_loss:.3g}({test_loss_ema:.3g}), acc={test_acc:5.2f}({test_acc_ema:5.2f})       >>> [best]={best_acc:5.2f}({best_acc_ema:5.2f})'
                 )
                 tb_lg.add_scalar('test/acc', test_acc, cur_iter)
