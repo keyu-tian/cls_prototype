@@ -8,8 +8,8 @@ def parse_cfg(cfg_path, world_size, rank):
     cfg = EasyDict(cfg)
     
     cp, ls_k, ls = None, None, None
-    for comp in cfg.values():
-        if isinstance(comp, dict):
+    for comp_k, comp in cfg.items():
+        if comp_k != 'data' and isinstance(comp, dict):
             for k, v in comp.items():
                 if isinstance(v, list):
                     assert len(v) == world_size

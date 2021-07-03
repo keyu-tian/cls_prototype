@@ -11,8 +11,11 @@ from torchvision.transforms import transforms
 
 
 class RandomTranslate(object):
+    def __init__(self, mag):    # mag=0.3
+        self.mag = mag
+    
     def __call__(self, img):
-        mag = random.uniform(-0.25, 0.25)
+        mag = random.uniform(-self.mag, self.mag)
         mat = (
             1, 0, mag * img.size[0],
             0, 1, 0
@@ -26,8 +29,11 @@ class RandomTranslate(object):
 
 
 class RandSharpness(object):
+    def __init__(self, mag):    # mag=0.9
+        self.mag = mag
+    
     def __call__(self, x: Image.Image):
-        mag = random.uniform(-0.8, 0.8)
+        mag = random.uniform(-self.mag, self.mag)
         return ImageEnhance.Sharpness(x).enhance(
             1 + mag
         )
@@ -41,7 +47,9 @@ class AutoContrast(object):
 class Scene15Set(ImageFolder):
     def __init__(
             self, root_dir_path, train, vgg=False,
-            rot=10, scale_ratio=0.6, val_crop=True
+            wh=0.6, scale_ratio=0.6,
+            sharp=0.9, trans=0.3, rot=10,
+            jitter=0.3, val_crop=True
     ):
         root_dir_path = os.path.join(
             root_dir_path, 'train' if train else 'test'
@@ -52,12 +60,12 @@ class Scene15Set(ImageFolder):
         taget_im_size = 224 if vgg else 256
         if train:
             aug = [
-                transforms.RandomResizedCrop(taget_im_size, scale=(0.36, 1), ratio=(r1, r2)),
-                transforms.RandomChoice((RandSharpness(), AutoContrast())),
-                RandomTranslate(),
-                transforms.ColorJitter(0.3, 0.3),
                 transforms.RandomHorizontalFlip(),
+                transforms.RandomResizedCrop(taget_im_size, scale=(wh * wh, 1), ratio=(r1, r2)),
+                transforms.RandomChoice((RandSharpness(sharp), AutoContrast())),
+                RandomTranslate(trans),
                 transforms.RandomRotation(rot),
+                transforms.ColorJitter(jitter, jitter),
             ]
         else:
             if val_crop:

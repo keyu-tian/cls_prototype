@@ -65,24 +65,40 @@ def main_process(exp_root, cfg, dist, loggers):
         ep=train_cfg.epochs, lr=train_cfg.lr, wd=train_cfg.wd, nowd=train_cfg.nowd, ls=train_cfg.ls_ratio, clp=train_cfg.grad_clip,
         pr=0, rem=0, beg_t=datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
     )
-    
-    tr_loader, te_loader = build_dataloader(data_cfg)
+
+    get_new_tr_loader, te_loader = build_dataloader(data_cfg)
     ema, model = build_model(model_cfg)
     if dist.is_master():
         torchsummary.summary(model, (3, 224, 224))
 
     loggers[0].info(f'=> [final cfg]:\n{pformat(dict(cfg))}')
-    train_model(exp_root, train_cfg, dist, loggers, tr_loader, te_loader, ema, model)
+    train_model(exp_root, train_cfg, dist, loggers, get_new_tr_loader, te_loader, ema, model)
 
 
 def build_dataloader(data_cfg):
     if data_cfg.root is None:
         data_cfg.root = os.path.abspath(os.path.join(os.path.expanduser('~'), 'datasets', 'scene15'))
-    tr_set = Scene15Set(root_dir_path=data_cfg.root, train=True, vgg=data_cfg.vgg, rot=data_cfg.rot, scale_ratio=data_cfg.scale_ratio)
     te_set = Scene15Set(root_dir_path=data_cfg.root, train=False, vgg=data_cfg.vgg, val_crop=data_cfg.val_crop)
-    tr_loader = DataLoader(tr_set, data_cfg.batch_size, shuffle=True, num_workers=4, pin_memory=True, drop_last=True)
     te_loader = DataLoader(te_set, data_cfg.batch_size * 4, shuffle=False, num_workers=4, pin_memory=True, drop_last=False)
-    return tr_loader, te_loader
+    
+    ranges = dict(
+        wh=np.linspace(data_cfg.wh[0], data_cfg.wh[1], 10),
+        scale_ratio=np.linspace(data_cfg.scale_ratio[0], data_cfg.scale_ratio[1], 10),
+        sharp=np.linspace(data_cfg.sharp[0], data_cfg.sharp[1], 10),
+        trans=np.linspace(data_cfg.trans[0], data_cfg.trans[1], 10),
+        rot=np.linspace(data_cfg.rot[0], data_cfg.rot[1], 10),
+        jitter=np.linspace(data_cfg.jitter[0], data_cfg.jitter[1], 10),
+    )
+    
+    def get_new_tr_loader(idx10):
+        kw = {k: round(v[idx10].item(), 3) for k, v in ranges.items()}
+        tr_set = Scene15Set(
+            root_dir_path=data_cfg.root, train=True, vgg=data_cfg.vgg,
+            **kw
+        )
+        return kw, DataLoader(tr_set, data_cfg.batch_size, shuffle=True, num_workers=4, pin_memory=True, drop_last=True)
+    
+    return get_new_tr_loader, te_loader
 
 
 @torch.no_grad()
@@ -101,7 +117,7 @@ def eval_model(te_loader, model: torch.nn.Module):
     return 100. * tot_correct / tot_pred, tot_loss / tot_iters
 
 
-def train_model(exp_root, train_cfg, dist, loggers, tr_loader, te_loader, ema: EMA, model):
+def train_model(exp_root, train_cfg, dist, loggers, get_new_tr_loader, te_loader, ema: EMA, model):
     # todo: mix-up
     lg, st_lg, tb_lg = loggers
     try:
@@ -109,13 +125,15 @@ def train_model(exp_root, train_cfg, dist, loggers, tr_loader, te_loader, ema: E
     except ValueError:
         pass
     
-    saved_path = os.path.join(exp_root, 'best_ckpt.pth')
+    prefix = train_cfg.descs[dist.rank] if train_cfg.descs is not None else f'rk{dist.rank}'
+    saved_path = os.path.join(exp_root, f'{prefix}_best_ckpt.pth')
     all_params = list(model.parameters())
     params = filter_params(model) if train_cfg.nowd else list(filter(lambda p: p.requires_grad, model.parameters()))
     optimizer = torch.optim.SGD(params, lr=float(train_cfg.lr), weight_decay=float(train_cfg.wd), momentum=0.9, nesterov=True)
     loss_fn = LabelSmoothCELoss(float(train_cfg.ls_ratio), NUM_CLASSES) if train_cfg.ls_ratio is not None else CrossEntropyLoss()
     loss_fn = loss_fn.cuda()
     
+    aug_kw, tr_loader = get_new_tr_loader(0)
     tr_iters = len(tr_loader)
     max_ep = train_cfg.epochs
     max_iter = max_ep * tr_iters
@@ -124,17 +142,21 @@ def train_model(exp_root, train_cfg, dist, loggers, tr_loader, te_loader, ema: E
     epoch_speed = AverageMeter(4)
     
     loop_start_t = time.time()
+    milestone_ep: list = np.linspace(0, max_ep, 10+1, dtype=int)[1:-1].tolist()
     for ep in range(max_ep):
         te_freq = max(1, round(tr_iters // 3)) if ep >= max_ep * 0.5 else tr_iters * 4
         ep_str = f'%{len(str(max_ep))}d'
         ep_str %= ep + 1
         ep_str = f'ep[{ep_str}/{max_ep}]'
-        if ep == max_ep - 1 or ep % 10 == 0:
-            em_t = time.time()
-            torch.cuda.empty_cache()
-            master_echo(dist.is_master(), f' @@@@@ {exp_root} , ept_cc: {time.time() - em_t:.3f}s,      be={best_acc:5.2f} ({best_acc_ema:5.2f})', '36')
+        if ep == max_ep - 1:
+            master_echo(dist.is_master(), f' @@@@@ {exp_root}      be={best_acc:5.2f} ({best_acc_ema:5.2f})', '36')
         
         # train one epoch
+        if ep in milestone_ep:  # update tr_loader (replace the current augmentation policy to a stronger one)
+            torch.cuda.empty_cache()
+            aug_kw, tr_loader = get_new_tr_loader(milestone_ep.index(ep) + 1)
+            master_echo(dist.is_master(), f' @@@@@ {exp_root}, akw={aug_kw}     be={best_acc:5.2f} ({best_acc_ema:5.2f})', '36')
+            
         ep_start_t = time.time()
         last_t = time.time()
         for it, (inp, tar) in enumerate(tr_loader):
