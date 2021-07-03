@@ -2,10 +2,12 @@ import yaml
 from easydict import EasyDict
 
 
-def parse_cfg(cfg_path, world_size, rank):
+def parse_cfg(cfg_path, world_size, rank, only_model=False):
     with open(cfg_path) as f:
         cfg = yaml.safe_load(f)
     cfg = EasyDict(cfg)
+    if only_model:
+        return cfg.model
     
     cp, ls_k, ls = None, None, None
     for comp_k, comp in cfg.items():
