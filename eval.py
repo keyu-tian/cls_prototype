@@ -21,6 +21,7 @@ def main():
 
     model_cfg = parse_cfg(args.cfg, None, None, only_model=True)
     ema, model = build_model(model_cfg)
+    model.load_state_dict(torch.load(args.ckpt_path, map_location='cpu'))
     
     for val_crop in (True, False):
         te_set = Scene15Set(root_dir_path='/mnt/lustre/tiankeyu/datasets/scene15', train=False, vgg=False, val_crop=val_crop)
