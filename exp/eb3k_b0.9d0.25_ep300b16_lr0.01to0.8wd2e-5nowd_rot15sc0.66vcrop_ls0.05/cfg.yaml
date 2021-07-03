@@ -3,7 +3,7 @@ data:
     rot: 15
     root: ~                     # None: [will be expand as ~/datasets/scene15]
     vgg: False
-    scale_ratio: 0.7
+    scale_ratio: 0.66
     val_crop: True
 
 model:
