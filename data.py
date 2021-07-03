@@ -69,9 +69,9 @@ class Scene15Set(ImageFolder):
             ]
         else:
             if val_crop:
-                aug = [transforms.Resize(round(taget_im_size * 1.143)), transforms.CenterCrop(taget_im_size)]
+                aug = [transforms.Resize((round(taget_im_size * 1.143), round(taget_im_size * 1.143))), transforms.CenterCrop(taget_im_size)]
             else:
-                aug = [transforms.Resize(taget_im_size)]
+                aug = [transforms.Resize((taget_im_size, taget_im_size))]
         
         if vgg:
             normalize = [
