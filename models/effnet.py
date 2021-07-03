@@ -10,6 +10,7 @@ from torch.nn import init
 BN, AF = None, None
 
 __all__ = ['efficientnet_b0', 'efficientnet_b1', 'efficientnet_b2', 'efficientnet_b3',
+           'efficientnet_b3_k',
            'efficientnet_b4', 'efficientnet_b5', 'efficientnet_b6', 'efficientnet_b7']
 
 
@@ -527,3 +528,8 @@ if __name__ == '__main__':
     import torchsummary
     torchsummary.summary(net, (3, 224, 224))
     print(net.__class__.__name__)
+
+    for name, m in net.named_modules():
+        clz = m.__class__.__name__
+        print(clz)
+    
