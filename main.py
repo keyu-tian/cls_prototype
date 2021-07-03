@@ -75,6 +75,8 @@ def main_process(exp_root, cfg, dist, loggers):
 
 
 def build_dataloader(data_cfg):
+    if data_cfg.root is None:
+        data_cfg.root = os.path.abspath(os.path.join(os.path.expanduser('~'), 'datasets', 'scene15'))
     tr_set = Scene15Set(root_dir_path=data_cfg.root, train=True, vgg=data_cfg.vgg, rot=data_cfg.rot, scale_ratio=data_cfg.scale_ratio)
     te_set = Scene15Set(root_dir_path=data_cfg.root, train=False, vgg=data_cfg.vgg, val_crop=data_cfg.val_crop)
     tr_loader = DataLoader(tr_set, data_cfg.batch_size, shuffle=True, num_workers=4, pin_memory=True, drop_last=True)
