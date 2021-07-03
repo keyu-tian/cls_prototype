@@ -60,7 +60,7 @@ class STListener:
         
         tb_port = self.get_tensorboard_port()
         tb_ip_port = f'{socket.gethostbyname(socket.gethostname())}:{tb_port}'
-        print(colorama.Fore.LIGHTBLUE_EX + f'[STListener] tensorboard ip:port={tb_ip_port}')
+        print(colorama.Fore.LIGHTBLUE_EX + f'[STListener] tensorboard ip:port  =  {tb_ip_port}')
         cmd = f'tensorboard --logdir {self.exp_dir_abs_path} --port {tb_port} --bind_all'
         sp = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE, bufsize=-1)
         
