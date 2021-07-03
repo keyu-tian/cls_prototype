@@ -364,6 +364,7 @@ class MBConvBlock(nn.Module):
 class EfficientNet(nn.Module):
     def __init__(self,
                  model_name,
+                 num_classes,
                  use_fc_bn=False,
                  fc_bn_init_scale=1.0,
                  blocks_args_override_list=None,
@@ -383,9 +384,9 @@ class EfficientNet(nn.Module):
         self.use_fc_bn = use_fc_bn
         self.fc_bn_init_scale = fc_bn_init_scale
         
-        self._build(dropout_rate)
+        self._build(dropout_rate, num_classes)
     
-    def _build(self, new_dropout_rate):
+    def _build(self, new_dropout_rate, num_classes):
         self.af = AF
         blocks = []
         for block_args in self._blocks_args:
@@ -419,7 +420,8 @@ class EfficientNet(nn.Module):
         )
         
         self.avgpool = torch.nn.AdaptiveAvgPool2d(output_size=1)
-        self.fc = torch.nn.Linear(c_final, self._global_params.num_classes)
+        self.fc = torch.nn.Linear(c_final, num_classes)
+        # self.fc = torch.nn.Linear(c_final, self._global_params.num_classes)
         
         if self._global_params.dropout_rate > 0:
             p = new_dropout_rate if new_dropout_rate is not None else self._global_params.dropout_rate
@@ -430,7 +432,8 @@ class EfficientNet(nn.Module):
         self._initialize_weights()
         
         if self.use_fc_bn:
-            self.fc_bn = BN(self._global_params.num_classes)
+            self.fc_bn = BN(num_classes)
+            # self.fc_bn = BN(self._global_params.num_classes)
             init.constant_(self.fc_bn.weight, self.fc_bn_init_scale)
             init.constant_(self.fc_bn.bias, 0)
     
