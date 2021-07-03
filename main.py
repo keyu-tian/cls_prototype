@@ -191,7 +191,7 @@ def train_model(exp_root, train_cfg, dist, loggers, tr_loader, te_loader, ema: E
                 lg.info(
                     f'=> {ep_str}, {it_str}:    lr={sche_lr:.3g}({actual_lr:.3g}), nm={orig_norm:.1f}    [exp]: {exp_name}\n'
                     f'  [train] L={train_loss:.3g}, acc={train_acc:5.2f}, da={data_t-last_t:.3f} cu={cuda_t-data_t:.3f} fp={forw_t-cuda_t:.3f} bp={back_t-forw_t:.3f} cl={clip_t-back_t:.3f} op={optm_t-clip_t:.3f}\n'
-                    f'  [test ] L={test_loss:.3g}({test_loss_ema:.3g}), acc={test_acc:5.2f}({test_acc_ema:5.2f})       >>> [best]={best_acc:5.2f}({best_acc_ema:5.2f})'
+                    f'  [test ] L={test_loss:.3g}({test_loss_ema:.3g}), acc={test_acc:5.2f}({test_acc_ema:5.2f})    remain [{str(remain_time)}] ({finish_time})        >>> [best]={best_acc:5.2f}({best_acc_ema:5.2f})'
                 )
                 tb_lg.add_scalar('test/acc', test_acc, cur_iter)
                 tb_lg.add_scalars('test/acc', {'ema': test_acc_ema}, cur_iter)
