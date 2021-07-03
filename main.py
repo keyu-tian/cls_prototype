@@ -274,4 +274,6 @@ def train_model(exp_root, train_cfg, dist, loggers, tr_loader, te_loader, ema: E
 
 
 if __name__ == '__main__':
+    import numpy as np
+    from torch import multiprocessing as mp
     main()
