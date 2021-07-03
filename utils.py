@@ -150,7 +150,7 @@ def filter_params(model: torch.nn.Module):
     type2num = defaultdict(lambda: 0)
     for name, m in model.named_modules():
         clz = m.__class__.__name__
-        if clz.find('Conv') != -1:
+        if clz.find('Conv2d') != -1:
             if m.bias is not None:
                 if 'conv_dw_b' in pgroup and m.groups == m.in_channels:
                     pgroup['conv_dw_b'].append(m.bias)
@@ -190,7 +190,7 @@ def filter_params(model: torch.nn.Module):
                 names['linear_w'].append(name + '.weight')
                 type2num[m.__class__.__name__ + '.weight'] += 1
         
-        elif clz.find('BatchNorm') != -1:
+        elif clz.find('BatchNorm2d') != -1:
             if m.weight is not None:
                 pgroup['bn_w'].append(m.weight)
                 names_all.append(name + '.weight')

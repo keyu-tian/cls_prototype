@@ -87,6 +87,7 @@ def efficientnet_params(model_name):
         'efficientnet_b1': (1.0, 1.1, 240, 0.2),
         'efficientnet_b2': (1.1, 1.2, 260, 0.3),
         'efficientnet_b3': (1.2, 1.4, 300, 0.3),
+        'efficientnet_b3_k': (1.3, 1.6, 300, 0.4),
         'efficientnet_b4': (1.4, 1.8, 380, 0.4),
         'efficientnet_b5': (1.6, 2.2, 456, 0.4),
         'efficientnet_b6': (1.8, 2.6, 528, 0.5),
@@ -496,6 +497,11 @@ def efficientnet_b3(**kwargs):
     return model
 
 
+def efficientnet_b3_k(**kwargs):
+    model = EfficientNet(model_name='efficientnet_b3_k', **kwargs)
+    return model
+
+
 def efficientnet_b4(**kwargs):
     model = EfficientNet(model_name='efficientnet_b4', **kwargs)
     return model
@@ -517,7 +523,7 @@ def efficientnet_b7(**kwargs):
 
 
 if __name__ == '__main__':
-    net = efficientnet_b3(bn_mom=0.9)
+    net = efficientnet_b3_k(bn_mom=0.9, num_classes=15)
     import torchsummary
     torchsummary.summary(net, (3, 224, 224))
     print(net.__class__.__name__)
