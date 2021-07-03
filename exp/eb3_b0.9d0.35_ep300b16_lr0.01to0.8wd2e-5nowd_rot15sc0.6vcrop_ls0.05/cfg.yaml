@@ -8,12 +8,12 @@ data:
 
 model:
     name: efficientnet_b3
+    ema_mom: 0.999
     kwargs:
         bn_mom: 0.9
         dropout_rate: 0.35      # b0b1: 0.2, b2b3: 0.3, b4b5: 0.4, b6b7: 0.5
 
 train:
-    ema_mom: 0.999
     epochs: 3
     lr: [0.01, 0.02, 0.04, 0.08,    0.1, 0.2, 0.4, 0.8]
     wd: 2e-5
