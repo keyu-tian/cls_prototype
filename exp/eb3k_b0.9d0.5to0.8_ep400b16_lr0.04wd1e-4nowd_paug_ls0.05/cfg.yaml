@@ -1,0 +1,28 @@
+data:
+    batch_size: 16
+    wh: [0.7, 0.5]
+    scale_ratio: [0.7, 0.5]
+    sharp: [0.5, 1]
+    trans: [0.15, 0.35]
+    rot: [10, 20]
+    jitter: [0.2, 0.4]
+    root: ~                     # None: [will be expand as ~/datasets/scene15]
+    vgg: False
+    val_crop: True
+
+model:
+    name: efficientnet_b3_k
+    kwargs:
+        bn_mom: 0.9
+        dropout_rate: [0.5, 0.6, 0.7, 0.8]      # b0b1: 0.2, b2b3: 0.3, b4b5: 0.4, b6b7: 0.5
+    ema_mom: 0.999
+
+train:
+    epochs: 400
+    lr: 0.04
+    wd: 1e-4
+    nowd: True
+    ls_ratio: 0.05
+    grad_clip: 4
+    # desc: [will be auto assigned in runtime]
+
