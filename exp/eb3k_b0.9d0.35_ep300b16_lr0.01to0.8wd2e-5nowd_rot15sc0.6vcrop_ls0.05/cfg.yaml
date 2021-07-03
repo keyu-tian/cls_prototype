@@ -19,6 +19,6 @@ train:
     wd: 2e-5
     nowd: True
     ls_ratio: 0.05
-    grad_clip: 10
+    grad_clip: 5
     # desc: [will be auto assigned in runtime]
 

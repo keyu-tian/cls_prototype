@@ -165,7 +165,7 @@ def train_model(exp_root, train_cfg, dist, loggers, tr_loader, te_loader, ema: E
             ema.step(model, cur_iter + 1)
             
             logging = cur_iter == max_iter - 1 or cur_iter % te_freq == 0
-            if logging or orig_norm > 30:
+            if logging or orig_norm > 15 or cur_iter < tr_iters:
                 tb_lg.add_scalars('opt/lr', {'sche': sche_lr, 'actu': actual_lr}, cur_iter)
                 tb_lg.add_scalars('opt/norm', {'orig': orig_norm, 'clip': train_cfg.grad_clip}, cur_iter)
             
