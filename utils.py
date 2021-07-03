@@ -1,6 +1,7 @@
 import datetime
 import heapq
 import math
+import os
 import time
 from collections import defaultdict
 
@@ -9,6 +10,11 @@ import torch
 
 def time_str():
     return datetime.datetime.now().strftime('[%m-%d %H:%M:%S]')
+
+
+def master_echo(is_master, msg: str, color='33', tail=''):
+    if is_master:
+        os.system(f'echo -e "\033[{color}m{msg}\033[0m{tail}"')
 
 
 class LabelSmoothCELoss(torch.nn.Module):

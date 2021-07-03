@@ -18,7 +18,7 @@ from ema import EMA
 from log import create_loggers
 from meta import NUM_CLASSES
 from models import build_model
-from utils import filter_params, TopKHeap, LabelSmoothCELoss, adjust_learning_rate, AverageMeter
+from utils import filter_params, TopKHeap, LabelSmoothCELoss, adjust_learning_rate, AverageMeter, master_echo
 
 
 def main():
@@ -31,7 +31,7 @@ def main():
     parser.add_argument('--exp_dirname', type=str, required=True)
     parser.add_argument('--cfg', type=str, required=True)
     args = parser.parse_args()
-
+    
     sh_root = os.getcwd()
     exp_root = os.path.join(sh_root, args.exp_dirname)
     os.chdir(args.main_py_rel_path)
@@ -108,7 +108,6 @@ def train_model(exp_root, train_cfg, dist, loggers, tr_loader, te_loader, ema: E
     except ValueError:
         pass
     
-    exp_name = exp_root.split('exp/')[-1]
     saved_path = os.path.join(exp_root, 'best_ckpt.pth')
     all_params = list(model.parameters())
     params = filter_params(model) if train_cfg.nowd else list(filter(lambda p: p.requires_grad, model.parameters()))
@@ -122,13 +121,17 @@ def train_model(exp_root, train_cfg, dist, loggers, tr_loader, te_loader, ema: E
     saved_acc, best_acc, best_acc_ema = -1, -1, -1
     topk_accs, topk_accs_ema = TopKHeap(maxsize=30), TopKHeap(maxsize=30)
     epoch_speed = AverageMeter(4)
-
+    
     loop_start_t = time.time()
     for ep in range(max_ep):
         te_freq = max(1, round(tr_iters // 6)) if ep >= max_ep * 0.5 else tr_iters * 4
         ep_str = f'%{len(str(max_ep))}d'
         ep_str %= ep + 1
         ep_str = f'ep[{ep_str}/{max_ep}]'
+        if ep == max_ep - 1 or ep % 10 == 0:
+            em_t = time.time()
+            torch.cuda.empty_cache()
+            master_echo(dist.is_master(), f' @@@@@ {exp_root} , ept_cc: {time.time() - em_t:.3f}s,      be={best_acc:5.2f} ({best_acc_ema:5.2f})', '36')
         
         # train one epoch
         ep_start_t = time.time()
@@ -165,7 +168,7 @@ def train_model(exp_root, train_cfg, dist, loggers, tr_loader, te_loader, ema: E
             if logging or orig_norm > 30:
                 tb_lg.add_scalars('opt/lr', {'sche': sche_lr, 'actu': actual_lr}, cur_iter)
                 tb_lg.add_scalars('opt/norm', {'orig': orig_norm, 'clip': train_cfg.grad_clip}, cur_iter)
-                
+            
             if logging:
                 preds = logits.detach().argmax(dim=1)
                 train_acc = 100. * preds.eq(tar).sum().item() / tar.shape[0]
@@ -179,18 +182,20 @@ def train_model(exp_root, train_cfg, dist, loggers, tr_loader, te_loader, ema: E
                 test_acc_ema, test_loss_ema = eval_model(te_loader, model)
                 best_acc_ema = max(best_acc_ema, test_acc_ema)
                 if best_acc_ema > saved_acc:
-                    saved_acc = best_acc_ema; torch.save(model.state_dict(), saved_path)
+                    saved_acc = best_acc_ema;
+                    torch.save(model.state_dict(), saved_path)
                 ema.recover(model)
                 topk_accs_ema.push_q(test_acc_ema)
-
+                
                 if best_acc > saved_acc:
-                    saved_acc = best_acc; torch.save(model.state_dict(), saved_path)
-
+                    saved_acc = best_acc;
+                    torch.save(model.state_dict(), saved_path)
+                
                 remain_time, finish_time = epoch_speed.time_preds(max_ep - (ep + 1))
-
+                
                 lg.info(
-                    f'=> {ep_str}, {it_str}:    lr={sche_lr:.3g}({actual_lr:.3g}), nm={orig_norm:.1f}    [exp]: {exp_name}\n'
-                    f'  [train] L={train_loss:.3g}, acc={train_acc:5.2f}, da={data_t-last_t:.3f} cu={cuda_t-data_t:.3f} fp={forw_t-cuda_t:.3f} bp={back_t-forw_t:.3f} cl={clip_t-back_t:.3f} op={optm_t-clip_t:.3f}\n'
+                    f'=> {ep_str}, {it_str}:    lr={sche_lr:.3g}({actual_lr:.3g}), nm={orig_norm:.1f}\n'
+                    f'  [train] L={train_loss:.3g}, acc={train_acc:5.2f}, da={data_t - last_t:.3f} cu={cuda_t - data_t:.3f} fp={forw_t - cuda_t:.3f} bp={back_t - forw_t:.3f} cl={clip_t - back_t:.3f} op={optm_t - clip_t:.3f}\n'
                     f'  [test ] L={test_loss:.3g}({test_loss_ema:.3g}), acc={test_acc:5.2f}({test_acc_ema:5.2f})      remain [{str(remain_time)}] ({finish_time})       >>> [best]={best_acc:5.2f}({best_acc_ema:5.2f})'
                 )
                 tb_lg.add_scalar('test/acc', test_acc, cur_iter)
@@ -212,11 +217,11 @@ def train_model(exp_root, train_cfg, dist, loggers, tr_loader, te_loader, ema: E
             last_t = time.time()
         # iteration loop end
         epoch_speed.update(time.time() - ep_start_t)
-        tb_lg.add_scalar('test_ep_best/acc', best_acc, ep+1)
-        tb_lg.add_scalars('test_ep_best/acc', {'ema': best_acc_ema}, ep+1)
-        
+        tb_lg.add_scalar('test_ep_best/acc', best_acc, ep + 1)
+        tb_lg.add_scalars('test_ep_best/acc', {'ema': best_acc_ema}, ep + 1)
+    
     # epoch loop end
-
+    
     topk_test_acc = sum(topk_accs) / len(topk_accs)
     topk_test_acc_ema = sum(topk_accs_ema) / len(topk_accs_ema)
     
@@ -225,15 +230,15 @@ def train_model(exp_root, train_cfg, dist, loggers, tr_loader, te_loader, ema: E
     best_accs = dist.dist_fmt_vals(best_acc, None)
     best_accs_ema = dist.dist_fmt_vals(best_acc_ema, None)
     if dist.is_master():
-        [tb_lg.add_scalar('z_final_best/topk_accs',     topk_accs.max().item(), e)     for e in [-max_ep, max_ep]]
+        [tb_lg.add_scalar('z_final_best/topk_accs', topk_accs.max().item(), e) for e in [-max_ep, max_ep]]
         [tb_lg.add_scalar('z_final_best/topk_accs_ema', topk_accs_ema.max().item(), e) for e in [-max_ep, max_ep]]
-        [tb_lg.add_scalar('z_final_best/best_accs',     best_accs.max().item(), e)     for e in [-max_ep, max_ep]]
+        [tb_lg.add_scalar('z_final_best/best_accs', best_accs.max().item(), e) for e in [-max_ep, max_ep]]
         [tb_lg.add_scalar('z_final_best/best_accs_ema', best_accs_ema.max().item(), e) for e in [-max_ep, max_ep]]
-        [tb_lg.add_scalar('z_final_mean/topk_accs',     topk_accs.mean().item(), e)     for e in [-max_ep, max_ep]]
+        [tb_lg.add_scalar('z_final_mean/topk_accs', topk_accs.mean().item(), e) for e in [-max_ep, max_ep]]
         [tb_lg.add_scalar('z_final_mean/topk_accs_ema', topk_accs_ema.mean().item(), e) for e in [-max_ep, max_ep]]
-        [tb_lg.add_scalar('z_final_mean/best_accs',     best_accs.mean().item(), e)     for e in [-max_ep, max_ep]]
+        [tb_lg.add_scalar('z_final_mean/best_accs', best_accs.mean().item(), e) for e in [-max_ep, max_ep]]
         [tb_lg.add_scalar('z_final_mean/best_accs_ema', best_accs_ema.mean().item(), e) for e in [-max_ep, max_ep]]
-
+    
     if train_cfg.descs is not None:
         perform_dict_str = pformat({
             des: f'topk={ta.item():5.2f}({tae.item():5.2f}), best={ba.item():5.2f}({bae.item():5.2f})'
@@ -249,7 +254,7 @@ def train_model(exp_root, train_cfg, dist, loggers, tr_loader, te_loader, ema: E
         f' best         @ (max={best_accs.max():5.2f}, mean={best_accs.mean():5.2f}, std={best_accs.std():.2g}) {str(best_accs).replace(chr(10), " ")})'
         f' EMA best     @ (max={best_accs_ema.max():5.2f}, mean={best_accs_ema.mean():5.2f}, std={best_accs_ema.std():.2g}) {str(best_accs_ema).replace(chr(10), " ")})'
     )
-
+    
     dt = time.time() - loop_start_t
     lg.info(
         f'=> training finished,'
