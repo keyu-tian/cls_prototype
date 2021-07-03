@@ -25,7 +25,7 @@ class STLogger:
     
     @retry(stop_max_attempt_number=5, wait_fixed=500)
     def log(self, **kw):
-        changed = not all(self.st_kw[k] == v for k, v in kw.items())
+        changed = not all(k in self.st_kw and self.st_kw[k] == v for k, v in kw.items())
         if changed:
             self.st_kw.update(kw)
             with open(self.log_path, 'w') as fp:
