@@ -180,7 +180,7 @@ def train_model(exp_root, train_cfg, dist, loggers, get_new_tr_loader, te_loader
             clip_t = time.time()
             
             sche_lr = adjust_learning_rate(optimizer, cur_iter, max_iter, train_cfg.lr)
-            actual_lr = sche_lr * min(1, float(train_cfg.grad_clip) / orig_norm)
+            actual_lr = sche_lr * min(1., float(train_cfg.grad_clip) / orig_norm)
             optimizer.step()
             optimizer.zero_grad()
             optm_t = time.time()
