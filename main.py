@@ -271,6 +271,10 @@ def train_model(exp_root, train_cfg, dist, loggers, tr_loader, te_loader, ema: E
         m_be=best_accs.mean(), m_be_e=best_accs_ema.mean(),
         end_t=datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
     )
+    
+    dist.barrier()
+    tb_lg.close()
+    exit(0)
 
 
 if __name__ == '__main__':
