@@ -45,6 +45,13 @@ Invert = ImageOps.invert
 
 
 class Scene15Set(ImageFolder):
+    @staticmethod
+    def denormalize(im: torch.Tensor, vgg):
+        if vgg:
+            return im.add_(torch.as_tensor([103.939, 116.779, 123.68])[:, None, None]).mul_(1 / 255).flip(0)
+        else:
+            return im.mul_(0.25347006).add(0.45567986)
+    
     def __init__(
             self, root_dir_path, train, vgg=False,
             wh=0.6, scale_ratio=0.6,
@@ -124,14 +131,14 @@ def calc_stats():
 
 def visualize():
     import matplotlib.pyplot as plt
-    
-    t = Scene15Set(r'C:\Users\16333\Desktop\PyCharm\cv_course\proj_3\homework_set_3\data', train=True, vgg=False)
+    vgg = True
+    t = Scene15Set(r'C:\Users\16333\Desktop\PyCharm\cv_course\proj_3\homework_set_3\data', train=True, vgg=vgg)
     for idx in range(1320, len(t), 2):
         im1 = torch.stack([t[idx][0] for _ in range(32)])
         # im2 = torch.stack([t[idx+1][0] for _ in range(16)])
         # ims = torch.cat((im1, im2))
         ims = im1
-        grids: torch.Tensor = torchvision.utils.make_grid(ims, padding=10).mul_(0.25347006).add(0.45567986)
+        grids: torch.Tensor = Scene15Set.denormalize(torchvision.utils.make_grid(ims, padding=10), vgg=vgg)
         plt.imshow(np.transpose(grids.numpy(), (1, 2, 0)), interpolation='nearest')
         plt.show()
 

@@ -73,7 +73,7 @@ def main_process(exp_root, cfg, dist, loggers):
         torchsummary.summary(model, (3, 224, 224))
 
     loggers[0].info(f'=> [final cfg]:\n{pformat(dict(cfg))}')
-    train_model(exp_root, train_cfg, dist, loggers, get_new_tr_loader, te_loader, ema, model)
+    train_model(exp_root, train_cfg, dist, loggers, get_new_tr_loader, te_loader, ema, model, data_cfg.vgg)
 
 
 def build_dataloader(data_cfg):
@@ -118,7 +118,7 @@ def eval_model(te_loader, model: torch.nn.Module):
     return 100. * tot_correct / tot_pred, tot_loss / tot_iters
 
 
-def train_model(exp_root, train_cfg, dist, loggers, get_new_tr_loader, te_loader, ema: EMA, model):
+def train_model(exp_root, train_cfg, dist, loggers, get_new_tr_loader, te_loader, ema: EMA, model, vgg_mode):
     # todo: mix-up
     lg, st_lg, tb_lg = loggers
     try:
@@ -169,6 +169,9 @@ def train_model(exp_root, train_cfg, dist, loggers, get_new_tr_loader, te_loader
             cur_iter = it + ep * tr_iters
             data_t = time.time()
             
+            if it == 0 and ep in milestone_ep and dist.is_master():
+                tb_lg.add_images('augmented', Scene15Set.denormalize(inp[:6].data, vgg_mode).cpu().numpy(), ep, dataformats='NCHW')
+
             inp, tar = inp.cuda(non_blocking=True), tar.cuda(non_blocking=True)
             cuda_t = time.time()
             
