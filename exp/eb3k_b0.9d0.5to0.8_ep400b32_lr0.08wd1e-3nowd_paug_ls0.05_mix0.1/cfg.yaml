@@ -2,7 +2,7 @@ data:
     batch_size: 32
     wh: [0.6, 0.45]
     scale_ratio: [0.6, 0.45]
-    sharp: [0.6, 1.0]
+    sharp: [0.55, 1.0]
     trans: [0.2, 0.35]
     rot: [15, 25]
     jitter: [0.25, 0.4]
@@ -24,7 +24,7 @@ train:
     wd: 1e-3
     nowd: True
     ls_ratio: 0.05
-    mix: 0.15
+    mix: 0.1
     grad_clip: 4
     # desc: [will be auto assigned in runtime]
 
