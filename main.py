@@ -42,8 +42,6 @@ def main():
     loggers = create_loggers(prj_root, sh_root, exp_root, dist)
     
     cfg = parse_cfg(args.cfg, dist.world_size, dist.rank)
-    loggers[0].info(f'=> [final cfg]:\n{pformat(dict(cfg))}')
-    
     if dist.is_master():
         try:
             main_process(exp_root, cfg, dist, loggers)
@@ -71,6 +69,8 @@ def main_process(exp_root, cfg, dist, loggers):
     ema, model = build_model(model_cfg)
     if dist.is_master():
         torchsummary.summary(model, (3, 224, 224))
+
+    loggers[0].info(f'=> [final cfg]:\n{pformat(dict(cfg))}')
     train_model(exp_root, train_cfg, dist, loggers, tr_loader, te_loader, ema, model)
 
 
@@ -253,14 +253,14 @@ def train_model(exp_root, train_cfg, dist, loggers, tr_loader, te_loader, ema: E
     eval_str = (
         f' mean-top     @ (max={topk_accs.max():5.2f}, mean={topk_accs.mean():5.2f}, std={topk_accs.std():.2g}) {str(topk_accs).replace(chr(10), " ")})\n'
         f' EMA mean-top @ (max={topk_accs_ema.max():5.2f}, mean={topk_accs_ema.mean():5.2f}, std={topk_accs_ema.std():.2g}) {str(topk_accs_ema).replace(chr(10), " ")})\n'
-        f' best         @ (max={best_accs.max():5.2f}, mean={best_accs.mean():5.2f}, std={best_accs.std():.2g}) {str(best_accs).replace(chr(10), " ")})'
+        f' best         @ (max={best_accs.max():5.2f}, mean={best_accs.mean():5.2f}, std={best_accs.std():.2g}) {str(best_accs).replace(chr(10), " ")})\n'
         f' EMA best     @ (max={best_accs_ema.max():5.2f}, mean={best_accs_ema.mean():5.2f}, std={best_accs_ema.std():.2g}) {str(best_accs_ema).replace(chr(10), " ")})'
     )
     
     dt = time.time() - loop_start_t
     lg.info(
         f'=> training finished,'
-        f' total time cost: {dt / 60:.2f}min ({dt / 60 / 60:.2f}h)'
+        f' total time cost: {dt / 60:.2f}min ({dt / 60 / 60:.2f}h)\n'
         f' performance: \n{perform_dict_str}{eval_str}'
     )
     
