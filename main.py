@@ -5,7 +5,6 @@ from datetime import datetime
 from pprint import pformat
 
 import colorama
-import numpy as np
 import torch
 import torch.nn.functional as F
 from torch.nn import CrossEntropyLoss
@@ -15,10 +14,10 @@ from torchsummary import torchsummary
 from cfg import parse_cfg
 from data import Scene15Set
 from dist import TorchDistManager
-from effnet import efficientnet_b3
 from ema import EMA
 from log import create_loggers
 from meta import NUM_CLASSES
+from models import build_model
 from utils import filter_params, TopKHeap, LabelSmoothCELoss, adjust_learning_rate, AverageMeter
 
 
@@ -81,16 +80,6 @@ def build_dataloader(data_cfg):
     tr_loader = DataLoader(tr_set, data_cfg.batch_size, shuffle=True, num_workers=4, pin_memory=True, drop_last=True)
     te_loader = DataLoader(te_set, data_cfg.batch_size * 4, shuffle=False, num_workers=4, pin_memory=True, drop_last=False)
     return tr_loader, te_loader
-
-
-def build_model(model_cfg):
-    name, kw = model_cfg.name, model_cfg.kwargs
-    kw.update({'num_classes': NUM_CLASSES})
-    model = {
-        'efficientnet_b3': efficientnet_b3
-    }[name](**kw).cuda()
-    ema = EMA(model, model_cfg.ema_mom)
-    return ema, model
 
 
 @torch.no_grad()
