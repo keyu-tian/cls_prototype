@@ -61,7 +61,7 @@ def main_process(exp_root, cfg, dist, loggers):
     data_cfg, model_cfg, train_cfg = cfg.data, cfg.model, cfg.train
     
     loggers[1].log(
-        net=model_cfg.name, bm=model_cfg.kwargs.bn_mom, dr=model_cfg.kwargs.new_dropout_rate,
+        net=model_cfg.name, bm=model_cfg.kwargs.bn_mom, dr=model_cfg.kwargs.dropout_rate,
         bs=data_cfg.batch_size, rot=data_cfg.rot, r=data_cfg.scale_ratio, vc=data_cfg.val_crop,
         ep=train_cfg.epochs, lr=train_cfg.lr, wd=train_cfg.wd, nowd=train_cfg.nowd, ls=train_cfg.ls_ratio, cl=train_cfg.grad_clip,
         pr=0, rem=0, beg_t=datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
