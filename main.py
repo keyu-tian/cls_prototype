@@ -73,7 +73,7 @@ def main_process(exp_root, cfg, dist, loggers):
         torchsummary.summary(model, (3, 224, 224))
 
     loggers[0].info(f'=> [final cfg]:\n{pformat(dict(cfg))}')
-    train_model(exp_root, train_cfg, dist, loggers, get_new_tr_loader, te_loader, ema, model, data_cfg.vgg)
+    train_model(exp_root, train_cfg, dist, loggers, get_new_tr_loader, te_loader, ema, model)
 
 
 def build_dataloader(data_cfg):
@@ -91,12 +91,14 @@ def build_dataloader(data_cfg):
         jitter=np.linspace(data_cfg.jitter[0], data_cfg.jitter[1], 10),
     )
     
-    def get_new_tr_loader(idx10):
+    def get_new_tr_loader(idx10, tb_lg):
         kw = {k: round(v[idx10].item(), 3) for k, v in ranges.items()}
         tr_set = Scene15Set(
             root_dir_path=data_cfg.root, train=True, vgg=data_cfg.vgg,
             **kw
         )
+        augmented = torch.stack([tr_set[7][0] for _ in range(6)])
+        tb_lg.add_images('augmented', tr_set.denormalize(augmented.data).cpu().numpy(), idx10, dataformats='NCHW')
         return kw, DataLoader(tr_set, data_cfg.batch_size, shuffle=True, num_workers=4, pin_memory=True, drop_last=True)
     
     return get_new_tr_loader, te_loader
@@ -118,7 +120,7 @@ def eval_model(te_loader, model: torch.nn.Module):
     return 100. * tot_correct / tot_pred, tot_loss / tot_iters
 
 
-def train_model(exp_root, train_cfg, dist, loggers, get_new_tr_loader, te_loader, ema: EMA, model, vgg_mode):
+def train_model(exp_root, train_cfg, dist, loggers, get_new_tr_loader, te_loader, ema: EMA, model):
     # todo: mix-up
     lg, st_lg, tb_lg = loggers
     try:
@@ -135,7 +137,7 @@ def train_model(exp_root, train_cfg, dist, loggers, get_new_tr_loader, te_loader
     loss_fn = LabelSmoothCELoss(float(train_cfg.ls_ratio), NUM_CLASSES) if train_cfg.ls_ratio is not None else CrossEntropyLoss()
     loss_fn = loss_fn.cuda()
     
-    aug_kw, tr_loader = get_new_tr_loader(0)
+    aug_kw, tr_loader = get_new_tr_loader(0, tb_lg)
     tr_iters = len(tr_loader)
     max_ep = train_cfg.epochs
     max_iter = max_ep * tr_iters
@@ -157,7 +159,7 @@ def train_model(exp_root, train_cfg, dist, loggers, get_new_tr_loader, te_loader
         # train one epoch
         if ep in milestone_ep:  # update tr_loader (replace the current augmentation policy to a stronger one)
             torch.cuda.empty_cache()
-            aug_kw, tr_loader = get_new_tr_loader(milestone_ep.index(ep) + 1)
+            aug_kw, tr_loader = get_new_tr_loader(milestone_ep.index(ep) + 1, tb_lg)
             master_echo(dist.is_master(), f' @@@@@ {exp_root}, akw={aug_kw}     be={best_acc:5.2f} ({best_acc_ema:5.2f})', '36')
             
         ep_start_t = time.time()
@@ -169,9 +171,6 @@ def train_model(exp_root, train_cfg, dist, loggers, get_new_tr_loader, te_loader
             cur_iter = it + ep * tr_iters
             data_t = time.time()
             
-            if it == 0 and ep in milestone_ep and dist.is_master():
-                tb_lg.add_images('augmented', Scene15Set.denormalize(inp[:6].data, vgg_mode).cpu().numpy(), ep, dataformats='NCHW')
-
             inp, tar = inp.cuda(non_blocking=True), tar.cuda(non_blocking=True)
             cuda_t = time.time()
             

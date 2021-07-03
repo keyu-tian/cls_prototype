@@ -45,9 +45,8 @@ Invert = ImageOps.invert
 
 
 class Scene15Set(ImageFolder):
-    @staticmethod
-    def denormalize(im: torch.Tensor, vgg):
-        if vgg:
+    def denormalize(self, im: torch.Tensor):
+        if self.vgg:
             return im.add_(torch.as_tensor([103.939, 116.779, 123.68])[:, None, None]).mul_(1 / 255).flip(0)
         else:
             return im.mul_(0.25347006).add(0.45567986)
@@ -58,6 +57,7 @@ class Scene15Set(ImageFolder):
             sharp=0.9, trans=0.3, rot=10,
             jitter=0.3, val_crop=True
     ):
+        self.vgg = vgg
         root_dir_path = os.path.join(
             root_dir_path, 'train' if train else 'test'
         )
@@ -133,12 +133,13 @@ def visualize():
     import matplotlib.pyplot as plt
     vgg = True
     t = Scene15Set(r'C:\Users\16333\Desktop\PyCharm\cv_course\proj_3\homework_set_3\data', train=True, vgg=vgg)
-    for idx in range(1320, len(t), 2):
+    for idx in range(7, len(t), 2):
         im1 = torch.stack([t[idx][0] for _ in range(32)])
+        print(im1.shape)
         # im2 = torch.stack([t[idx+1][0] for _ in range(16)])
         # ims = torch.cat((im1, im2))
         ims = im1
-        grids: torch.Tensor = Scene15Set.denormalize(torchvision.utils.make_grid(ims, padding=10), vgg=vgg)
+        grids: torch.Tensor = t.denormalize(torchvision.utils.make_grid(ims, padding=10))
         plt.imshow(np.transpose(grids.numpy(), (1, 2, 0)), interpolation='nearest')
         plt.show()
 
