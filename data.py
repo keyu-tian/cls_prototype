@@ -70,7 +70,7 @@ class Scene15Set(ImageFolder):
                 transforms.RandomHorizontalFlip(),
                 transforms.RandomResizedCrop(taget_im_size, scale=(wh * wh, 1), ratio=(r1, r2)),
                 transforms.RandomChoice((RandSharpness(sharp), RandSharpness(sharp), AutoContrast, Equalize)),
-                transforms.RandomApply((Invert,), p=0.08),
+                transforms.RandomApply((Invert,), p=0.1),
                 RandomTranslate(trans),
                 transforms.RandomRotation(rot),
                 transforms.ColorJitter(jitter, jitter),
