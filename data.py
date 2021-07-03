@@ -69,8 +69,8 @@ class Scene15Set(ImageFolder):
             aug = [
                 transforms.RandomHorizontalFlip(),
                 transforms.RandomResizedCrop(taget_im_size, scale=(wh * wh, 1), ratio=(r1, r2)),
-                transforms.RandomChoice((RandSharpness(sharp), Equalize)),
-                transforms.RandomApply((Invert,), p=0.2),
+                transforms.RandomChoice((RandSharpness(sharp), RandSharpness(sharp), AutoContrast, Equalize)),
+                transforms.RandomApply((Invert,), p=0.1),
                 RandomTranslate(trans),
                 transforms.RandomRotation(rot),
                 transforms.ColorJitter(jitter, jitter),
@@ -131,7 +131,7 @@ def calc_stats():
 
 def visualize():
     import matplotlib.pyplot as plt
-    vgg = True
+    vgg = False
     t = Scene15Set(r'C:\Users\16333\Desktop\PyCharm\cv_course\proj_3\homework_set_3\data', train=True, vgg=vgg)
     for idx in range(7, len(t), 2):
         im1 = torch.stack([t[idx][0] for _ in range(32)])
