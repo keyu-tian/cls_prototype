@@ -127,6 +127,7 @@ def train_model(exp_root, train_cfg, dist, loggers, get_new_tr_loader, te_loader
         pass
     
     prefix = train_cfg.descs[dist.rank] if train_cfg.descs is not None else f'rk{dist.rank}'
+    prefix = prefix.replace(' ', '').replace(':', '_').replace('=', '').strip('[]')
     saved_path = os.path.join(exp_root, f'{prefix}_best_ckpt.pth')
     all_params = list(model.parameters())
     params = filter_params(model) if train_cfg.nowd else list(filter(lambda p: p.requires_grad, model.parameters()))
