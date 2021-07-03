@@ -52,10 +52,10 @@ class Scene15Set(ImageFolder):
         taget_im_size = 224 if vgg else 256
         if train:
             aug = [
-                transforms.RandomResizedCrop(taget_im_size, scale=(0.32, 1), ratio=(r1, r2)),
+                transforms.RandomResizedCrop(taget_im_size, scale=(0.36, 1), ratio=(r1, r2)),
                 transforms.RandomChoice((RandSharpness(), AutoContrast())),
                 RandomTranslate(),
-                transforms.ColorJitter(0.32, 0.32),
+                transforms.ColorJitter(0.3, 0.3),
                 transforms.RandomHorizontalFlip(),
                 transforms.RandomRotation(rot),
             ]
