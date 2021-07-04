@@ -45,9 +45,7 @@ class PretrainedVGG(nn.Module):
     
     def forward(self, x):
         x = self.features(x)
-        print(x.shape)
         x = self.avgpool(x)
-        print(x.shape)
         x = torch.flatten(x, 1)
         x = self.classifier(x)
         return x
