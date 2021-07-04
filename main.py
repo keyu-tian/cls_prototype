@@ -98,7 +98,8 @@ def build_dataloader(data_cfg):
             **kw
         )
         augmented = torch.stack([tr_set[7][0] for _ in range(6)])
-        tb_lg.add_images('augmented', tr_set.denormalize(augmented.data).cpu().numpy(), idx10, dataformats='NCHW')
+        if tb_lg is not None:
+            tb_lg.add_images('augmented', tr_set.denormalize(augmented.data).cpu().numpy(), idx10, dataformats='NCHW')
         return kw, DataLoader(tr_set, data_cfg.batch_size, shuffle=True, num_workers=4, pin_memory=True, drop_last=True)
     
     return get_new_tr_loader, te_loader
@@ -137,7 +138,7 @@ def train_model(exp_root, train_cfg, dist, loggers, get_new_tr_loader, te_loader
     loss_fn = LabelSmoothCELoss(float(train_cfg.ls_ratio), NUM_CLASSES) if train_cfg.ls_ratio is not None else CrossEntropyLoss()
     loss_fn = loss_fn.cuda()
     
-    aug_kw, tr_loader = get_new_tr_loader(0, tb_lg)
+    aug_kw, tr_loader = get_new_tr_loader(0, tb_lg if dist.is_master() else None)
     tr_iters = len(tr_loader)
     max_ep = train_cfg.epochs
     max_iter = max_ep * tr_iters
@@ -159,7 +160,7 @@ def train_model(exp_root, train_cfg, dist, loggers, get_new_tr_loader, te_loader
         # train one epoch
         if ep in milestone_ep:  # update tr_loader (replace the current augmentation policy to a stronger one)
             torch.cuda.empty_cache()
-            aug_kw, tr_loader = get_new_tr_loader(milestone_ep.index(ep) + 1, tb_lg)
+            aug_kw, tr_loader = get_new_tr_loader(milestone_ep.index(ep) + 1, tb_lg if dist.is_master() else None)
             master_echo(dist.is_master(), f' @@@@@ {exp_root}, akw={aug_kw}     be={best_acc:5.2f} ({best_acc_ema:5.2f})', '36')
             
         ep_start_t = time.time()

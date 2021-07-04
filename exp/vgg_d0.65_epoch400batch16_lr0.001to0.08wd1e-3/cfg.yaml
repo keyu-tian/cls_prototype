@@ -15,13 +15,13 @@ model:
     kwargs:
         pretrained_path: ../../vgg16-6c64b313-no-fc.pth
         bn_mom: 0.9
-        dropout_rate: 0.6
+        dropout_rate: 0.65
     ema_mom: 0.999
 
 train:
     vgg: *vgg
     epochs: 400
-    lr: [0.01, 0.02, 0.04, 0.08, 0.1, 0.2, 0.4, 0.8]
+    lr: [0.001, 0.002, 0.004, 0.008, 0.01, 0.02, 0.04, 0.08]
     wd: 1e-3
     nowd: True
     ls_ratio: 0.05
