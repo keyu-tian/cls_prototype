@@ -7,12 +7,13 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn import init
 
+from utils import get_bn
+
 BN, AF = None, None
 
 __all__ = ['efficientnet_b0', 'efficientnet_b1', 'efficientnet_b2', 'efficientnet_b3',
            'efficientnet_b3_k',
            'efficientnet_b4', 'efficientnet_b5', 'efficientnet_b6', 'efficientnet_b7']
-
 
 GlobalParams = collections.namedtuple('GlobalParams', [
     'dropout_rate', 'data_format', 'num_classes', 'width_coefficient', 'depth_coefficient',
@@ -27,17 +28,11 @@ BlockArgs = collections.namedtuple('BlockArgs', [
 BlockArgs.__new__.__defaults__ = (None,) * len(BlockArgs._fields)
 
 
-def get_bn(bn_mom):
-    def BN_func(*args, **kwargs):
-        kwargs.update({'momentum': bn_mom})
-        return nn.BatchNorm2d(*args, **kwargs)
-    return BN_func
-
-
 class SwishAutoFn(torch.autograd.Function):
     """ Memory Efficient Swish
     From: https://blog.ceshine.net/post/pytorch-memory-swish/
     """
+    
     @staticmethod
     def forward(ctx, x):
         result = x.mul(torch.sigmoid(x))
@@ -295,7 +290,7 @@ class SEModule(nn.Module):
         w = self.se_s_conv(w)
         w = self.af1(w, inplace=True)
         w = self.se_e_conv(w)
-        w = self.af2(w) # inplace=True
+        w = self.af2(w)  # inplace=True
         return w
 
 
@@ -328,7 +323,7 @@ class MBConvBlock(nn.Module):
         self.dw_conv = nn.Conv2d(exp, exp, kernel_size, stride, kernel_size // 2, groups=exp, bias=False)
         self.dw_bn = BN(exp)
         
-        if self.has_se:             # 这里的SE也插到了MBConv中间
+        if self.has_se:  # 这里的SE也插到了MBConv中间
             self.se_module = SEModule(inp=exp, se_size=max(1, int(inp * se_ratio)), af1=self.af, af2=torch.sigmoid)
         
         self.last_pw_conv = nn.Conv2d(exp, oup, 1, 1, 0, bias=False)
@@ -451,7 +446,7 @@ class EfficientNet(nn.Module):
                 m.bias.data.zero_()
             elif isinstance(m, nn.Linear):
                 n = m.weight.size(1)
-                m.weight.data.normal_(0, 1.0/float(n))
+                m.weight.data.normal_(0, 1.0 / float(n))
                 m.bias.data.zero_()
     
     def forward(self, x):
@@ -526,10 +521,10 @@ def efficientnet_b7(**kwargs):
 if __name__ == '__main__':
     net = efficientnet_b3_k(bn_mom=0.9, num_classes=15)
     import torchsummary
+    
     torchsummary.summary(net, (3, 224, 224))
     print(net.__class__.__name__)
-
+    
     for name, m in net.named_modules():
         clz = m.__class__.__name__
         print(clz)
-    

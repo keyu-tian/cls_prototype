@@ -6,6 +6,7 @@ import time
 from collections import defaultdict
 
 import torch
+from torch import nn as nn
 
 
 def time_str():
@@ -15,6 +16,14 @@ def time_str():
 def master_echo(is_master, msg: str, color='33', tail=''):
     if is_master:
         os.system(f'echo -e "\033[{color}m{msg}\033[0m{tail}"')
+
+
+def get_bn(bn_mom):
+    def BN_func(*args, **kwargs):
+        kwargs.update({'momentum': bn_mom})
+        return nn.BatchNorm2d(*args, **kwargs)
+    
+    return BN_func
 
 
 class TopKHeap(list):
