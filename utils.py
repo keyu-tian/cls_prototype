@@ -148,7 +148,7 @@ def filter_params(model: torch.nn.Module):
     for name, m in model.named_modules():
         clz = m.__class__.__name__
         if clz.find('Conv2d') != -1:
-            if m.bias is not None:
+            if m.bias is not None and m.bias.requires_grad:
                 if 'conv_dw_b' in pgroup and m.groups == m.in_channels:
                     pgroup['conv_dw_b'].append(m.bias)
                     names_all.append(name + '.bias')
@@ -164,43 +164,43 @@ def filter_params(model: torch.nn.Module):
                     names_all.append(name + '.bias')
                     names['conv_b'].append(name + '.bias')
                     type2num[m.__class__.__name__ + '.bias'] += 1
-            if 'conv_dw_w' in pgroup and m.groups == m.in_channels:
+            if 'conv_dw_w' in pgroup and m.groups == m.in_channels and m.weight.requires_grad:
                 pgroup['conv_dw_w'].append(m.weight)
                 names_all.append(name + '.weight')
                 names['conv_dw_w'].append(name + '.weight')
                 type2num[m.__class__.__name__ + '.weight(dw)'] += 1
-            elif 'conv_dense_w' in pgroup and m.groups == 1:
+            elif 'conv_dense_w' in pgroup and m.groups == 1 and m.weight.requires_grad:
                 pgroup['conv_dense_w'].append(m.weight)
                 names_all.append(name + '.weight')
                 names['conv_dense_w'].append(name + '.weight')
                 type2num[m.__class__.__name__ + '.weight(dense)'] += 1
         
         elif clz.find('Linear') != -1:
-            if m.bias is not None:
+            if m.bias is not None and m.bias.requires_grad:
                 pgroup['linear_b'].append(m.bias)
                 names_all.append(name + '.bias')
                 names['linear_b'].append(name + '.bias')
                 type2num[m.__class__.__name__ + '.bias'] += 1
-            if 'linear_w' in pgroup:
+            if 'linear_w' in pgroup and m.weight.requires_grad:
                 pgroup['linear_w'].append(m.weight)
                 names_all.append(name + '.weight')
                 names['linear_w'].append(name + '.weight')
                 type2num[m.__class__.__name__ + '.weight'] += 1
         
         elif clz.find('BatchNorm2d') != -1:
-            if m.weight is not None:
+            if m.weight is not None and m.weight.requires_grad:
                 pgroup['bn_w'].append(m.weight)
                 names_all.append(name + '.weight')
                 names['bn_w'].append(name + '.weight')
                 type2num[m.__class__.__name__ + '.weight'] += 1
-            if m.bias is not None:
+            if m.bias is not None and m.bias.requires_grad:
                 pgroup['bn_b'].append(m.bias)
                 names_all.append(name + '.bias')
                 names['bn_b'].append(name + '.bias')
                 type2num[m.__class__.__name__ + '.bias'] += 1
     
     for name, p in model.named_parameters():
-        if name not in names_all:
+        if name not in names_all and p.requires_grad:
             pgroup_normal.append(p)
     
     param_groups = [{'params': pgroup_normal}]

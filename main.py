@@ -131,8 +131,8 @@ def train_model(exp_root, train_cfg, dist, loggers, get_new_tr_loader, te_loader
     prefix = train_cfg.descs[dist.rank] if train_cfg.descs is not None else f'rk{dist.rank}'
     prefix = prefix.replace(' ', '').replace(':', '_').replace('=', '').strip('[]')
     saved_path = os.path.join(exp_root, f'{prefix}_best_ckpt.pth')
-    all_params = list(model.parameters())
-    params = filter_params(model) if train_cfg.nowd else list(filter(lambda p: p.requires_grad, model.parameters()))
+    all_params = list(filter(lambda p: p.requires_grad, model.parameters()))
+    params = filter_params(model) if train_cfg.nowd else all_params
     optimizer = torch.optim.SGD(params, lr=float(train_cfg.lr), weight_decay=float(train_cfg.wd), momentum=0.9, nesterov=True)
     loss_fn = LabelSmoothCELoss(float(train_cfg.ls_ratio), NUM_CLASSES) if train_cfg.ls_ratio is not None else CrossEntropyLoss()
     loss_fn = loss_fn.cuda()
