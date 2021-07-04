@@ -83,7 +83,7 @@ def efficientnet_params(model_name):
         'efficientnet_b1': (1.0, 1.1, 240, 0.2),
         'efficientnet_b2': (1.1, 1.2, 260, 0.3),
         'efficientnet_b3': (1.2, 1.4, 300, 0.3),
-        'efficientnet_b3_k': (1.35, 1.7, 300, 0.4),
+        'efficientnet_b3_k': (1.3, 1.6, 300, 0.4),
         'efficientnet_b4': (1.4, 1.8, 380, 0.4),
         'efficientnet_b5': (1.6, 2.2, 456, 0.4),
         'efficientnet_b6': (1.8, 2.6, 528, 0.5),

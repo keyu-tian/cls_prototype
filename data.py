@@ -11,7 +11,7 @@ from torchvision.transforms import transforms
 
 
 class RandomTranslate(object):
-    def __init__(self, mag):  # mag=0.3
+    def __init__(self, mag):    # mag=0.3
         self.mag = mag
     
     def __call__(self, img):
@@ -29,7 +29,7 @@ class RandomTranslate(object):
 
 
 class RandSharpness(object):
-    def __init__(self, mag):  # mag=0.9
+    def __init__(self, mag):    # mag=0.9
         self.mag = mag
     
     def __call__(self, x: Image.Image):
@@ -69,8 +69,7 @@ class Scene15Set(ImageFolder):
             aug = [
                 transforms.RandomHorizontalFlip(),
                 transforms.RandomResizedCrop(taget_im_size, scale=(wh * wh, 1), ratio=(r1, r2)),
-                transforms.RandomChoice((RandSharpness(sharp), RandSharpness(sharp), AutoContrast, Equalize)),
-                transforms.RandomApply((Invert,), p=0.1),
+                transforms.RandomChoice((RandSharpness(sharp), AutoContrast)),
                 RandomTranslate(trans),
                 transforms.RandomRotation(rot),
                 transforms.ColorJitter(jitter, jitter),
