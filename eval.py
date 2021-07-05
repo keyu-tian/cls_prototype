@@ -25,7 +25,7 @@ def main():
     ema, model = build_model(model_cfg, cuda=cuda)
     model.load_state_dict(torch.load(args.ckpt_path, map_location='cpu'))
     
-    te_set = Scene15Set(root_dir_path='../data', train=False, vgg='vgg' in model_cfg.name)
+    te_set = Scene15Set(root_dir_path='/mnt/lustre/tiankeyu/datasets/scene15', train=False, vgg='vgg' in model_cfg.name)
     te_loader = DataLoader(te_set, 64, shuffle=False, num_workers=4, pin_memory=True, drop_last=False)
     test_acc, test_loss = eval_model(te_loader, model, cuda=cuda)
     print(f'[eval] test_acc={test_acc:5.2f}, test_loss={test_loss:.2f}')
