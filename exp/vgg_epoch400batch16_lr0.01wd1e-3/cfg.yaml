@@ -1,3 +1,4 @@
+# test acc = 90.55
 data:
     batch_size: 16
     wh: [0.7, 0.5]
@@ -8,7 +9,6 @@ data:
     jitter: [0.2, 0.4]
     root: ~                     # None: [will be expand as ~/datasets/scene15]
     vgg: &vgg True
-    val_crop: True
 
 model:
     name: vgg16

@@ -62,7 +62,7 @@ def main_process(exp_root, cfg, dist, loggers):
     
     loggers[1].log(
         net=model_cfg.name, bmo=model_cfg.kwargs.bn_mom, dr=model_cfg.kwargs.dropout_rate,
-        bs=data_cfg.batch_size, rot=data_cfg.rot, r=data_cfg.scale_ratio, vc=data_cfg.val_crop,
+        bs=data_cfg.batch_size, rot=data_cfg.rot, r=data_cfg.scale_ratio,
         ep=train_cfg.epochs, lr=train_cfg.lr, wd=train_cfg.wd, nowd=train_cfg.nowd, ls=train_cfg.ls_ratio, mix=train_cfg.get('mix', 0), clp=train_cfg.grad_clip,
         pr=0, rem=0, beg_t=datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
     )
@@ -106,17 +106,25 @@ def build_dataloader(data_cfg):
 
 
 @torch.no_grad()
-def eval_model(te_loader, model: torch.nn.Module):
+def eval_model(te_loader, model: torch.nn.Module, cuda=True):
     tr = model.training
     model.train(False)
     tot_correct, tot_pred, tot_loss, tot_iters = 0, 0, 0., 0
-    for (inp, tar) in te_loader:
-        inp, tar = inp.cuda(non_blocking=True), tar.cuda(non_blocking=True)
+    if cuda:
+        bar = te_loader
+    else:
+        from tqdm import tqdm
+        bar = tqdm(te_loader)
+    for (inp, tar) in bar:
+        if cuda:
+            inp, tar = inp.cuda(non_blocking=True), tar.cuda(non_blocking=True)
         logits = model(inp)
         tot_pred += tar.shape[0]
         tot_correct += logits.argmax(dim=1).eq(tar).sum().item()
         tot_loss += F.cross_entropy(logits, tar).item()
         tot_iters += 1
+        if not cuda:
+            bar.set_postfix(dict(cur_acc=100. * tot_correct / tot_pred))
     model.train(tr)
     return 100. * tot_correct / tot_pred, tot_loss / tot_iters
 

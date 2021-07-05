@@ -44,6 +44,13 @@ Equalize = ImageOps.equalize
 Invert = ImageOps.invert
 
 
+def vgg_normalize(im):
+    return im.flip(0).mul_(255).sub_(torch.as_tensor([103.939, 116.779, 123.68])[:, None, None])
+
+def fair_normalize(im):
+    return im.sub_(0.45567986).mul_(1 / 0.25347006)
+
+
 class Scene15Set(ImageFolder):
     def denormalize(self, im: torch.Tensor):
         if self.vgg:
@@ -55,7 +62,7 @@ class Scene15Set(ImageFolder):
             self, root_dir_path, train, vgg=False,
             wh=0.6, scale_ratio=0.6,
             sharp=0.9, trans=0.3, rot=10,
-            jitter=0.3, val_crop=True
+            jitter=0.3
     ):
         self.vgg = vgg
         root_dir_path = os.path.join(
@@ -75,22 +82,12 @@ class Scene15Set(ImageFolder):
                 transforms.ColorJitter(jitter, jitter),
             ]
         else:
-            if val_crop:
-                aug = [transforms.Resize((round(taget_im_size * 1.143), round(taget_im_size * 1.143))), transforms.CenterCrop(taget_im_size)]
-            else:
-                aug = [transforms.Resize((taget_im_size, taget_im_size))]
+            aug = [transforms.Resize((round(taget_im_size * 1.143), round(taget_im_size * 1.143))), transforms.CenterCrop(taget_im_size)]
         
-        if vgg:
-            normalize = [
-                transforms.ToTensor(),
-                lambda im: im.flip(0).mul_(255).sub_(torch.as_tensor([103.939, 116.779, 123.68])[:, None, None]),
-            ]
-        else:
-            normalize = [
-                transforms.ToTensor(),
-                lambda im: im.sub_(0.45567986).mul_(1 / 0.25347006),
-            ]
-        
+        normalize = [
+            transforms.ToTensor(),
+            vgg_normalize if vgg else fair_normalize,
+        ]
         super(Scene15Set, self).__init__(
             root_dir_path,
             transform=transforms.Compose(aug + normalize)

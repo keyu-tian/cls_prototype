@@ -1,3 +1,4 @@
+# test acc = 87.91
 data:
     batch_size: 16
     wh: [0.7, 0.5]
@@ -8,7 +9,6 @@ data:
     jitter: [0.2, 0.4]
     root: ~                     # None: [will be expand as ~/datasets/scene15]
     vgg: False
-    val_crop: True
 
 model:
     name: efficientnet_b3_k
