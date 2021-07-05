@@ -24,7 +24,7 @@ def main():
     model.load_state_dict(torch.load(args.ckpt_path, map_location='cpu'))
     
     for val_crop in (True, False):
-        te_set = Scene15Set(root_dir_path='/mnt/lustre/tiankeyu/datasets/scene15', train=False, vgg=False, val_crop=val_crop)
+        te_set = Scene15Set(root_dir_path='/mnt/lustre/tiankeyu/datasets/scene15', train=False, vgg='vgg' in model_cfg.name, val_crop=val_crop)
         te_loader = DataLoader(te_set, 64, shuffle=False, num_workers=4, pin_memory=True, drop_last=False)
         test_acc, test_loss = eval_model(te_loader, model)
         print(f'[val_crop={val_crop}] test_acc={test_acc:5.2f}, test_loss={test_loss:.2f}')
