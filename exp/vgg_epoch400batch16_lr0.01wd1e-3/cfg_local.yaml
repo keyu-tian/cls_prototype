@@ -1,0 +1,30 @@
+# test acc = 90.55
+data:
+    batch_size: 16
+    wh: [0.7, 0.5]
+    scale_ratio: [0.7, 0.5]
+    sharp: [0.5, 0.9]
+    trans: [0.15, 0.3]
+    rot: [10, 20]
+    jitter: [0.2, 0.4]
+    root: ~                     # None: [will be expand as ~/datasets/scene15]
+    vgg: &vgg True
+
+model:
+    name: vgg16
+    kwargs:
+        pretrained_path: vgg16-6c64b313-no-fc.pth
+        bn_mom: 0.9
+        dropout_rate: 0.65
+    ema_mom: 0.999
+
+train:
+    vgg: *vgg
+    epochs: 400
+    lr: 0.01
+    wd: 1e-3
+    nowd: True
+    ls_ratio: 0.05
+    grad_clip: 0.8
+    # desc: [will be auto assigned in runtime]
+
